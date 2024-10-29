@@ -1,0 +1,8 @@
+# main.yml
+
+---
+- name: Install Docker
+  import_tasks: tasks/install_docker.yml
+
+- name: Deploy Petclinic application
+  import_tasks: tasks/deploy_petclinic.yml

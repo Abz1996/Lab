@@ -1,0 +1,6 @@
+---
+# defaults file for deployer
+JFrogURL: "https://ncloud.jfrog.io"  # Default JFrog URL
+docker_image_name: "ncloud.jfrog.io/petclinic/petclinic:latest"  # Default Docker image
+app_port: 8081  # Default port for the application
+container_name: "petclinic"  # Default container name

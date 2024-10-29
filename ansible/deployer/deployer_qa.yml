@@ -1,0 +1,12 @@
+# deploy.yml
+---
+- hosts: qa
+  vars_files:
+    - vault.yml
+  become: true
+  roles:
+    - ./ansible/deployer
+
+  vars:
+    docker_image_name: "ncloud.jfrog.io/petclinic/petclinic:{{ build_number }}" # Use build number for the tag
+    app_port: 8081 # Change this as needed
