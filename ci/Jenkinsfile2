@@ -1,0 +1,106 @@
+pipeline {
+    agent any
+
+    parameters {
+        string(name: 'GIT_REPO_URL', defaultValue: 'https://github.com/Abz1996/Lab.git', description: 'Git repository URL')
+        string(name: 'GIT_BRANCH', defaultValue: 'main', description: 'Git branch name')
+        string(name: 'DeployEnvironment', defaultValue: '', description: 'Environment to deploy (QA or Production)')
+        string(name: 'AppPort', defaultValue: '8081', description: 'Port for the application')
+    }
+
+    environment {
+        registry = "abz1996/petclinic-java" // Docker image name
+        registryCredential = 'Docker_token' // Jenkins credential ID for DockerHub
+        dockerImage = '' // Placeholder for Docker image object
+        dockerTag = "${env.BUILD_NUMBER}" // Use build number as Docker tag
+        DOCKER_IMAGE_NAME = "${registry}:${dockerTag}" // Docker image name to be used in deployment
+    }
+
+    stages {
+        stage('Cloning Git') {
+            steps {
+                git branch: "${params.GIT_BRANCH}", url: "${params.GIT_REPO_URL}" // Clone the Git repository using parameters
+            }
+        }
+
+        stage('Compile Code') {
+            steps {
+                dir('petclinic-app') { // Change directory to 'petclinic-app'
+                    sh 'mvn compile' // Compile the code without running tests
+                }
+            }
+        }
+
+        stage('Build Package') {
+            steps {
+                dir('petclinic-app') { // Change directory to 'petclinic-app'
+                    sh 'mvn clean install -DskipTests=true' // Build the package without running tests
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                dir('petclinic-app') {
+                    script {
+                        echo "Building Docker image: ${registry}:${dockerTag}"
+                        dockerImage = docker.build("${registry}:${dockerTag}") // Build the Docker image with the build number as the tag
+                    }
+                }
+            }
+        }
+
+        stage('Publish Docker Image to DockerHub') {
+            steps {
+                script {
+                    echo "Pushing Docker image: ${registry}:${dockerTag} to DockerHub"
+                    docker.withRegistry('https://index.docker.io/v1/', registryCredential) {
+                        dockerImage.push() // Push the Docker image to DockerHub
+                    }
+                }
+            }
+        }
+
+        stage('Remove Local Docker Image') {
+            steps {
+                script {
+                    echo "Removing local Docker image: ${registry}:${dockerTag}"
+                    sh "docker rmi ${registry}:${dockerTag} || true" // Remove the local Docker image to free up space, ignore errors if it doesn’t exist
+                }
+            }
+        }
+
+        stage('Deploy QA | PROD') {
+            when {
+                expression { params.DeployEnvironment == 'QA' || params.DeployEnvironment == 'Production' }
+            }
+            steps {
+                script {
+                    // Pull the Docker image from Docker Hub
+                    echo "Pulling Docker image: ${DOCKER_IMAGE_NAME} from DockerHub"
+                    sh "docker pull ${DOCKER_IMAGE_NAME}"
+
+                    // Stop and remove any existing container with the same name
+                    sh """
+                    docker ps -q --filter "name=petclinic" | grep -q . && docker stop petclinic && docker rm petclinic || true
+                    """
+
+                    // Run the Docker container
+                    echo "Running Docker container: ${DOCKER_IMAGE_NAME} on port ${params.AppPort}"
+                    sh "docker run -d -p ${params.AppPort}:${params.AppPort} --name petclinic ${DOCKER_IMAGE_NAME}"
+                }
+            }
+        }
+    }
+
+    post {
+        cleanup {
+            cleanWs() // Clean up the workspace
+        }
+    }
+
+    options {
+        buildDiscarder(logRotator(daysToKeepStr: '1', numToKeepStr: '3')) // Keep 3 builds for 1 day
+    }
+}
+
