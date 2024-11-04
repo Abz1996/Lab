@@ -7,8 +7,8 @@ pipeline {
     }
 
     tools {
-        maven 'maven' // Use Maven version 3.9.9
-        jdk 'java' // Use JDK 8
+        maven 'M2_HOME' // Use Maven version 3.9.9
+        jdk 'JAVA_HOME' // Use JDK 8
     }
 
     environment {
