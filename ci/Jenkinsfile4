@@ -18,7 +18,7 @@ pipeline {
         DOCKER_IMAGE_NAME = "${registry}:${dockerTag}" // Docker image name to be used in deployment
     }
 
-
+     stages {
         stage('Build Docker Image') {
             steps {
                 dir('petclinic-app') {
@@ -29,7 +29,7 @@ pipeline {
                 }
             }
         }
-
+     }
 }   
         
 
