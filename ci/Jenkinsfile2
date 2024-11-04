@@ -39,16 +39,17 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
-            steps {
-                dir('petclinic-app') {
+        stages {
+            stage('Build Docker Image') {
+                steps {
                     script {
-                        echo "Building Docker image: ${registry}:${dockerTag}"
-                        dockerImage = docker.build("${registry}:${dockerTag}") // Build the Docker image with the build number as the tag
+                        docker.build('abz1996/petclinic-java:27')
                     }
                 }
             }
+            // Other stages...
         }
+    
 
         stage('Publish Docker Image to DockerHub') {
             steps {
