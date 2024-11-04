@@ -18,19 +18,36 @@ pipeline {
         DOCKER_IMAGE_NAME = "${registry}:${dockerTag}" // Docker image name to be used in deployment
     }
 
-     stages {
+      stages {
+        stage('Checkout SCM') {
+            steps {
+                checkout scm
+            }
+        }
         stage('Build Docker Image') {
             steps {
-                dir('petclinic-app') {
-                    script {
-                        echo "Building Docker image: ${registry}:${dockerTag}"
-                        dockerImage = docker.build("${registry}:${dockerTag}") // Build the Docker image with the build number as the tag
+                script {
+                    def image = docker.build("abz1996/petclinic-java:8")
+                }
+            }
+        }
+        stage('Publish Docker Image to DockerHub') {
+            steps {
+                script {
+                    docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-credentials') {
+                        image.push()
                     }
                 }
             }
         }
-     }
-}   
+    }
+    post {
+        always {
+            cleanWs()
+        }
+    }
+}
+}
         
 
         
